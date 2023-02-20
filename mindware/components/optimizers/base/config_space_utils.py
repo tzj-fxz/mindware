@@ -169,11 +169,17 @@ def get_random_neighborhood(configuration: Configuration, num: int, seed: int) -
 def sample_configurations(configuration_space: ConfigurationSpace, num: int) -> List[Configuration]:
     result = []
     cnt = 0
+    retry_cnt = 0
     while cnt < num:
         config = configuration_space.sample_configuration(1)
         if config not in result:
             result.append(config)
             cnt += 1
+        else:
+            retry_cnt += 1
+
+        if retry_cnt == 200:  # The space is too small to sample 'num' random configurations
+            break
     return result
 
 

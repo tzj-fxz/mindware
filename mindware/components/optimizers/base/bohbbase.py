@@ -123,7 +123,7 @@ class BohbBase(object):
                 indices = np.argsort(val_losses)
                 if len(T) >= self.eta:
                     T = [T[i] for i in indices]
-                    reduced_num = int(n_configs / self.eta)
+                    reduced_num = int(len(T) / self.eta)
                     T = T[0:reduced_num]
                 else:
                     T = [T[indices[0]]]
