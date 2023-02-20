@@ -43,6 +43,7 @@ test_data = dm.get_data_node(X_test, y_test)
 clf = Classifier(time_limit=time_limit,
                  output_dir=save_dir,
                  ensemble_method=ensemble_method,
+                 enable_meta_algorithm_selection=False,
                  evaluation=eval_type,
                  metric='acc',
                  n_jobs=n_jobs)

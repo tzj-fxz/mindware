@@ -20,8 +20,10 @@ from mindware.datasets.utils import load_train_test_data
 from mindware.components.utils.constants import CATEGORICAL, MULTICLASS_CLS, REGRESSION
 
 parser = argparse.ArgumentParser()
-dataset_set = 'diabetes,spectf,credit,ionosphere,lymphography,pc4,vehicle,yeast,' \
-              'messidor_features,winequality_red,winequality_white,splice,spambase,amazon_employee'
+# dataset_set = 'diabetes,spectf,credit,ionosphere,lymphography,pc4,vehicle,yeast,' \
+#               'messidor_features,winequality_red,winequality_white,splice,spambase,amazon_employee'
+# dataset_set = 'cpu_act,optdigits,phoneme,poker,wind'
+dataset_set = 'optdigits'
 parser.add_argument('--datasets', type=str, default=dataset_set)
 parser.add_argument('--task_type', type=str, default='cls', choices=['cls', 'rgs'])
 parser.add_argument('--mode', type=str, default='alter_hpo')
@@ -29,7 +31,7 @@ parser.add_argument('--cv', type=str, choices=['cv', 'holdout', 'partial'], defa
 parser.add_argument('--ens', type=str, default='None')
 parser.add_argument('--enable_meta', type=str, default='false', choices=['true', 'false'])
 parser.add_argument('--tree_id', type=int, default=0)
-parser.add_argument('--time_cost', type=int, default=600)
+parser.add_argument('--time_cost', type=int, default=1800)
 parser.add_argument('--start_id', type=int, default=0)
 parser.add_argument('--rep_num', type=int, default=5)
 # choices=['rb', 'alter_hpo', 'fixed', 'plot', 'all', 'ausk', 'combined']
@@ -40,9 +42,9 @@ if not os.path.exists(save_folder):
 
 
 def evaluate_sys(run_id, task_type, mth, dataset, ens_method, enable_meta,
-                 eval_type='holdout', time_limit=1200, seed=1, tree_id=0):
+                 eval_type='holdout', time_limit=1800, seed=1, tree_id=0):
     _task_type = MULTICLASS_CLS if task_type == 'cls' else REGRESSION
-    train_data, test_data = load_train_test_data(dataset, task_type=_task_type)
+    train_data, test_data = load_train_test_data(dataset, data_dir='../soln-ml/', task_type=_task_type)
     _enable_meta = True if enable_meta == 'true' else False
     if task_type == 'cls':
         from mindware.estimators import Classifier
