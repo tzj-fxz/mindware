@@ -178,7 +178,9 @@ class AbstractBlock(object):
                 else:
                     raise e
             test_data_node = test_data.copy_()
-            test_data_node = construct_node(test_data_node, best_op_list)
+
+            if self.task_type not in [TEXT_CLS, IMG_CLS]:
+                test_data_node = construct_node(test_data_node, best_op_list)
 
             if self.task_type in CLS_TASKS:
                 if self.task_type in [TEXT_CLS, IMG_CLS]:
