@@ -49,6 +49,10 @@ class CombinedTopKModelSaver(BaseTopKModelSaver):
     def get_path_by_config(output_dir, config, identifier):
         return os.path.join(output_dir, '%s_%s.pkl' % (identifier, CombinedTopKModelSaver.get_configuration_id(config)))
 
+    @staticmethod
+    def get_dl_model_path_by_config(output_dir, config, identifier):
+        return os.path.join(output_dir, '%s_%s.pt' % (identifier, CombinedTopKModelSaver.get_configuration_id(config)))
+
     def add(self, config, perf, estimator_id):
         """
             perf: the larger, the better.

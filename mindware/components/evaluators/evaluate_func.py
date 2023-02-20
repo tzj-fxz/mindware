@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.model_selection import StratifiedKFold, KFold, StratifiedShuffleSplit, ShuffleSplit
 
 from mindware.components.utils.balancing import smote
-
+from mindware.datasets.base_dl_dataset import TotalTextDataset
 
 def get_onehot_y(encoder, y):
     y_ = np.reshape(y, (len(y), 1))
@@ -112,3 +112,10 @@ def validation(estimator, scorer, X_train, y_train, X_val, y_val, fit_params=Non
         if onehot is not None:
             y_val = get_onehot_y(onehot, y_val)
         return scorer(estimator, X_val, y_val)
+
+
+def nn_validation(estimator, scorer, dataset: TotalTextDataset):
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        estimator.fit(dataset, scorer)
+        return estimator.score(dataset, scorer, test=False)

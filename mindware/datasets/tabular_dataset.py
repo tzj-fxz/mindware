@@ -1,4 +1,4 @@
-from .base_dl_dataset import BaseDataset
+from .base_dataset import BaseDataset
 from mindware.utils.data_manager import DataManager
 from mindware.components.utils.constants import REGRESSION, CLASSIFICATION
 from mindware.components.feature_engineering.fe_pipeline import FEPipeline

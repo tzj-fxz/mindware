@@ -26,7 +26,11 @@ class ConditioningBlock(AbstractBlock):
                  eval_type='holdout',
                  resampling_params=None,
                  n_jobs=1,
-                 seed=1):
+                 seed=1,
+                 topk_pkl=None,
+                 model_idx=None,
+                 model_weight=None,
+                 incumbent=None):
         """
         :param classifier_ids: subset of {'adaboost','bernoulli_nb','decision_tree','extra_trees','gaussian_nb','gradient_boosting',
         'gradient_boosting','k_nearest_neighbors','lda','liblinear_svc','libsvm_svc','multinomial_nb','passive_aggressive','qda',
@@ -47,7 +51,11 @@ class ConditioningBlock(AbstractBlock):
                                                 eval_type=eval_type,
                                                 resampling_params=resampling_params,
                                                 n_jobs=n_jobs,
-                                                seed=seed)
+                                                seed=seed,
+                                                topk_pkl=topk_pkl,
+                                                model_idx=model_idx,
+                                                model_weight=model_weight,
+                                                incumbent=incumbent)
 
         # Best configuration.
         self.optimal_arm = None
@@ -131,7 +139,7 @@ class ConditioningBlock(AbstractBlock):
         else:
             self.trial_num = MAX_INT
 
-    def iterate(self, trial_num=10):
+    def iterate(self, trial_num=5):
         # Search for an arm that is not early-stopped.
         while self.sub_bandits[self.arm_candidate[self.pick_id]].early_stop_flag and \
                 self.pick_id < len(self.arm_candidate):

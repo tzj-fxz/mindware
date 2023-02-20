@@ -30,7 +30,11 @@ class AlternatingBlock(AbstractBlock):
                  eval_type='holdout',
                  resampling_params=None,
                  n_jobs=1,
-                 seed=1):
+                 seed=1,
+                 topk_pkl=None,
+                 model_idx=None,
+                 model_weight=None,
+                 incumbent=None):
         super(AlternatingBlock, self).__init__(node_list, node_index, task_type, timestamp,
                                                fe_config_space, cash_config_space, data,
                                                fixed_config=fixed_config,
@@ -46,7 +50,11 @@ class AlternatingBlock(AbstractBlock):
                                                eval_type=eval_type,
                                                resampling_params=resampling_params,
                                                n_jobs=n_jobs,
-                                               seed=seed)
+                                               seed=seed,
+                                               topk_pkl=topk_pkl,
+                                               model_idx=model_idx,
+                                               model_weight=model_weight,
+                                               incumbent=incumbent)
 
         self.arms = ['hpo', 'fe']
         self.optimal_algo_id = None

@@ -1,8 +1,9 @@
 import numpy as np
 from sklearn.utils.multiclass import type_of_target
-from mindware.base_estimator import BaseEstimator
+from mindware.base_estimator import BaseEstimator, BaseDLEstimator
 from mindware.components.utils.constants import type_dict, MULTILABEL_CLS, IMG_CLS, TEXT_CLS, OBJECT_DET
 from mindware.components.feature_engineering.transformation_graph import DataNode
+from mindware.datasets.base_dl_dataset import TextDataset, TotalTextDataset
 
 
 class Classifier(BaseEstimator):
@@ -180,3 +181,51 @@ class Regressor(BaseEstimator):
         h['feature_id'] = np.array(range(len(_impact)))
         h['feature_impact'] = _impact
         return pd.DataFrame(h)
+
+
+class TextClassifier(BaseDLEstimator):
+    """This class implements the text classification task. """
+
+    def fit(self, dataset: TotalTextDataset, **kwargs):
+        """
+        Fit the classifier to given training data.
+        :param data: instance of Image Dataset
+        :return: self
+        """
+        self.metric = 'acc' if self.metric is None else self.metric
+        # Set task type to image classification.
+        self.task_type = TEXT_CLS
+        super().fit(dataset)
+
+        return self
+
+    def predict(self, dataset: TotalTextDataset, mode='test'):
+        return super().predict(dataset, mode=mode)
+
+    def predict_proba(self, dataset: TotalTextDataset, mode='test', batch_size=None, n_jobs=1):
+        """
+        Predict probabilities of classes for all samples X.
+        :param mode: 'test' or 'val'
+        :param dataset: TextDataset
+        :param batch_size: int
+        :param n_jobs: int
+        :return: y : array of shape = [n_samples, n_classes]
+            The predicted class probabilities.
+        """
+        if not isinstance(dataset, TotalTextDataset):
+            raise ValueError("X is supposed to be a TextDataset, but get %s" % type(dataset))
+        pred_proba = super().predict_proba(dataset, mode='test', batch_size=batch_size, n_jobs=n_jobs)
+
+        if self.task_type != MULTILABEL_CLS:
+            assert (
+                np.allclose(
+                    np.sum(pred_proba, axis=1),
+                    np.ones_like(pred_proba[:, 0]))
+            ), "Prediction probability does not sum up to 1!"
+
+        # Check that all probability values lie between 0 and 1.
+        assert (
+                (pred_proba >= 0).all() and (pred_proba <= 1).all()
+        ), "Found prediction probability value outside of [0, 1]!"
+
+        return pred_proba

@@ -1,4 +1,5 @@
 from mindware.components.feature_engineering.transformation_graph import DataNode
+from mindware.components.utils.constants import TEXT_CLS
 
 
 def get_increasing_sequence(data):
@@ -20,7 +21,10 @@ def is_imbalanced_dataset(data_node: DataNode):
     :param data_node:
     :return: boolean.
     """
-    labels = list(data_node.data[1])
+    if data_node.task_type == TEXT_CLS:
+        labels = list(data_node.data.y)
+    else:
+        labels = list(data_node.data[1])
     cnts = list()
     for val in set(labels):
         cnts.append(labels.count(val))

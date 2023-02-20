@@ -19,7 +19,7 @@ def fetch_predict_estimator(task_type, estimator_id, config, X_train, y_train, w
         from mindware.components.evaluators.cls_evaluator import get_estimator
     elif task_type in RGS_TASKS:
         from mindware.components.evaluators.rgs_evaluator import get_estimator
-    _, estimator = get_estimator(config_dict, estimator_id)
+    _, estimator, this_config = get_estimator(config_dict, estimator_id)
 
     estimator.fit(X_train, y_train, **_fit_params)
     return estimator

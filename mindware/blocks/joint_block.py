@@ -2,7 +2,7 @@ import time
 from ConfigSpace import ConfigurationSpace
 
 from mindware.components.feature_engineering.transformation_graph import DataNode
-from mindware.components.utils.constants import CLS_TASKS
+from mindware.components.utils.constants import CLS_TASKS, TEXT_CLS
 from mindware.components.optimizers import build_hpo_optimizer
 from mindware.blocks.abstract_block import AbstractBlock
 
@@ -12,7 +12,7 @@ class JointBlock(AbstractBlock):
                  task_type, timestamp,
                  fe_config_space: ConfigurationSpace,
                  cash_config_space: ConfigurationSpace,
-                 data: DataNode,
+                 data,
                  fixed_config=None,
                  time_limit=None,
                  trial_num=0,
@@ -26,7 +26,11 @@ class JointBlock(AbstractBlock):
                  eval_type='holdout',
                  resampling_params=None,
                  n_jobs=1,
-                 seed=1):
+                 seed=1,
+                 topk_pkl=None,
+                 model_idx=None,
+                 model_weight=None,
+                 incumbent=None):
         super(JointBlock, self).__init__(node_list, node_index, task_type, timestamp,
                                          fe_config_space, cash_config_space, data,
                                          fixed_config=fixed_config,
@@ -42,7 +46,11 @@ class JointBlock(AbstractBlock):
                                          eval_type=eval_type,
                                          resampling_params=resampling_params,
                                          n_jobs=n_jobs,
-                                         seed=seed)
+                                         seed=seed,
+                                         topk_pkl=topk_pkl,
+                                         model_idx=model_idx,
+                                         model_weight=model_weight,
+                                         incumbent=incumbent)
 
         self.fixed_config = fixed_config
 
@@ -59,7 +67,20 @@ class JointBlock(AbstractBlock):
         self.joint_cs = cs
 
         # Define evaluator and optimizer
-        if self.task_type in CLS_TASKS:
+        if self.task_type == TEXT_CLS:
+            from mindware.components.evaluators.text_cls_evaluator import TextClassificationEvaluator
+            self.evaluator = TextClassificationEvaluator(
+                fixed_config=fixed_config,
+                scorer=self.metric,
+                dataset=self.original_data,
+                if_imbal=self.if_imbal,
+                timestamp=self.timestamp,
+                output_dir=self.output_dir,
+                seed=self.seed,
+                resampling_strategy=self.eval_type,
+                resampling_params=self.resampling_params
+            )
+        elif self.task_type in CLS_TASKS:
             from mindware.components.evaluators.cls_evaluator import ClassificationEvaluator
             self.evaluator = ClassificationEvaluator(
                 fixed_config=fixed_config,
