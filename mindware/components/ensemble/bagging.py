@@ -3,7 +3,7 @@ import numpy as np
 import os
 import pickle as pkl
 
-from mindware.components.utils.constants import CLS_TASKS
+from mindware.components.utils.constants import CLS_TASKS, TEXT_CLS, IMG_CLS
 from mindware.components.ensemble.base_ensemble import BaseEnsembleModel
 from mindware.components.feature_engineering.parse import construct_node
 from functools import reduce
@@ -41,6 +41,8 @@ class Bagging(BaseEnsembleModel):
                 _node = construct_node(_node, op_list)
 
                 if self.base_model_mask[model_cnt] == 1:
+                    if self.task_type in [TEXT_CLS, IMG_CLS]:
+                        model_pred_list.append(model.predict_proba(_node))
                     if self.task_type in CLS_TASKS:
                         model_pred_list.append(model.predict_proba(_node.data[0]))
                     else:

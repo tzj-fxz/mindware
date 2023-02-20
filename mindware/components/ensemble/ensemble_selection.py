@@ -3,21 +3,24 @@ import numpy as np
 import pickle as pkl
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.metrics._scorer import _BaseScorer, _PredictScorer, _ThresholdScorer
+import os
+import torch
 
 from mindware.components.utils.constants import *
-from mindware.components.ensemble.base_ensemble import BaseEnsembleModel
+from mindware.components.ensemble.base_ensemble import BaseEnsembleModel, ptparse
 from mindware.components.feature_engineering.parse import construct_node
 
 
 class EnsembleSelection(BaseEnsembleModel):
-    def __init__(
-            self, stats, data_node,
-            ensemble_size: int,
-            task_type: int,
-            metric: _BaseScorer,
-            output_dir=None,
-            sorted_initialization: bool = False,
-            mode: str = 'fast'
+    def __init__(self, stats, data_node,
+                 ensemble_size: int,
+                 task_type: int,
+                 metric: _BaseScorer,
+                 output_dir=None,
+                 sorted_initialization: bool = True,
+                 mode: str = 'fast',
+                 model_idx=None,
+                 model_weight=None,
     ):
         super().__init__(stats=stats,
                          data_node=data_node,
@@ -26,7 +29,11 @@ class EnsembleSelection(BaseEnsembleModel):
                          task_type=task_type,
                          metric=metric,
                          output_dir=output_dir)
-        self.model_idx = list()
+        if model_idx is None:
+            self.model_idx = list()
+        else:
+            self.model_idx = model_idx
+            self.weights_ = model_weight
         self.sorted_initialization = sorted_initialization
         self.mode = mode
         self.encoder = OneHotEncoder()
@@ -43,7 +50,7 @@ class EnsembleSelection(BaseEnsembleModel):
         return score
 
     def fit(self, data):
-        if len(self.train_labels.shape) == 1 and self.task_type in CLS_TASKS:
+        if len(np.array(self.train_labels).shape) == 1 and self.task_type in CLS_TASKS:
             reshape_y = np.reshape(self.train_labels, (len(self.train_labels), 1))
             self.encoder.fit(reshape_y)
         self.ensemble_size = int(self.ensemble_size)
@@ -88,13 +95,13 @@ class EnsembleSelection(BaseEnsembleModel):
         ensemble_size = self.ensemble_size
 
         if self.sorted_initialization:
-            n_best = 20
+            n_best = 5
             indices = self._sorted_initialization(predictions, labels, n_best)
             for idx in indices:
                 ensemble.append(predictions[idx])
                 order.append(idx)
                 ensemble_ = np.array(ensemble).mean(axis=0)
-                ensemble_performance = self.calculate_score(pred=ensemble_, y_true=labels)
+                ensemble_performance = -self.calculate_score(pred=ensemble_, y_true=labels)
                 trajectory.append(ensemble_performance)
             ensemble_size -= n_best
 
@@ -109,9 +116,8 @@ class EnsembleSelection(BaseEnsembleModel):
                 for pred in ensemble:
                     ensemble_prediction += pred
                 ensemble_prediction /= s
+                weighted_ensemble_prediction = (s / float(s + 1)) * ensemble_prediction
 
-                weighted_ensemble_prediction = (s / float(s + 1)) * \
-                                               ensemble_prediction
             fant_ensemble_prediction = np.zeros(weighted_ensemble_prediction.shape)
             for j, pred in enumerate(predictions):
                 # TODO: this could potentially be vectorized! - let's profile
@@ -150,13 +156,13 @@ class EnsembleSelection(BaseEnsembleModel):
         ensemble_size = self.ensemble_size
 
         if self.sorted_initialization:
-            n_best = 20
+            n_best = 5
             indices = self._sorted_initialization(predictions, labels, n_best)
             for idx in indices:
                 ensemble.append(predictions[idx])
                 order.append(idx)
                 ensemble_ = np.array(ensemble).mean(axis=0)
-                ensemble_performance = self.calculate_score(pred=ensemble_, y_true=labels)
+                ensemble_performance = -self.calculate_score(pred=ensemble_, y_true=labels)
                 trajectory.append(ensemble_performance)
             ensemble_size -= n_best
 
@@ -193,38 +199,56 @@ class EnsembleSelection(BaseEnsembleModel):
         self.weights_ = weights
 
     def _sorted_initialization(self, predictions, labels, n_best):
-        perf = np.zeros([predictions.shape[0]])
+        perf = np.zeros([np.array(predictions).shape[0]])
 
         for idx, prediction in enumerate(predictions):
-            perf[idx] = self.calculate_score(pred=predictions, y_true=labels)
+            perf[idx] = self.calculate_score(pred=prediction, y_true=labels)
 
         indices = np.argsort(perf)[perf.shape[0] - n_best:]
         return indices
 
-    def predict(self, data):
+    def predict(self, data, test=True):
         predictions = []
         cur_idx = 0
         for algo_id in self.stats.keys():
             model_to_eval = self.stats[algo_id]
             for idx, (_, _, path) in enumerate(model_to_eval):
-                with open(path, 'rb')as f:
+                with open(path, 'rb') as f:
                     op_list, estimator, _ = pkl.load(f)
                 _node = data.copy_()
 
                 _node = construct_node(_node, op_list)
 
-                X_test = _node.data[0]
-                if cur_idx in self.model_idx:
-                    if self.task_type in CLS_TASKS:
-                        predictions.append(estimator.predict_proba(X_test))
+                if self.task_type in [TEXT_CLS, IMG_CLS]:
+                    pt_path = ptparse(path)
+                    
+                    X_test = _node.test_data.X
+                    if cur_idx in self.model_idx:
+                        if os.path.exists(pt_path):
+                            y_pred = estimator.predict_proba(_node, self.metric, test=test, model=torch.load(pt_path))
+                        else:
+                            y_pred = estimator.predict_proba(_node, self.metric, test=test)
+                        predictions.append(y_pred)
                     else:
-                        predictions.append(estimator.predict(X_test))
+                        if len(self.shape) == 1:
+                            predictions.append(np.zeros(len(X_test)))
+                        else:
+                            predictions.append(np.zeros((len(X_test), self.shape[1])))
                 else:
-                    if len(self.shape) == 1:
-                        predictions.append(np.zeros(len(_node.data[0])))
+                    X_test = _node.data[0]
+                    if cur_idx in self.model_idx:
+                        if self.task_type in CLS_TASKS:
+                            predictions.append(estimator.predict_proba(X_test))
+                        else:
+                            predictions.append(estimator.predict(X_test))
                     else:
-                        predictions.append(np.zeros((len(_node.data[0]), self.shape[1])))
+                        if len(self.shape) == 1:
+                            predictions.append(np.zeros(len(_node.data[0])))
+                        else:
+                            predictions.append(np.zeros((len(_node.data[0]), self.shape[1])))
+
                 cur_idx += 1
+        
         predictions = np.asarray(predictions)
 
         # if predictions.shape[0] == len(self.weights_),
@@ -254,20 +278,6 @@ class EnsembleSelection(BaseEnsembleModel):
                           if self.weights_[idx] > 0]))
 
     def refit(self):
-        # Refit models on whole training data
-        # model_cnt = 0
-        # for algo_id in self.stats:
-        #     model_to_eval = self.stats[algo_id]
-        #     for idx, (config, _, model_path) in enumerate(model_to_eval):
-        #         X, y = node.data
-        #         if self.weights_[model_cnt] != 0:
-        #             self.logger.info("Refit model %d" % model_cnt)
-        #             estimator = fetch_predict_estimator(self.task_type, config, X, y,
-        #                                                 weight_balance=node.enable_balance,
-        #                                                 data_balance=node.data_balance)
-        #             with open(model_path, 'wb') as f:
-        #                 pkl.dump(estimator, f)
-        #         model_cnt += 1
         raise NotImplementedError
 
     def get_models_with_weights(self, models):

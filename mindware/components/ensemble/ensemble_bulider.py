@@ -14,7 +14,10 @@ class EnsembleBuilder:
                  ensemble_size: int,
                  task_type: int,
                  metric: _BaseScorer,
-                 output_dir=None):
+                 output_dir=None,
+                 model_idx=None,
+                 model_weight=None
+                 ):
         self.model = None
         if ensemble_method == 'bagging':
             self.model = Bagging(stats=stats,
@@ -43,7 +46,9 @@ class EnsembleBuilder:
                                            ensemble_size=ensemble_size,
                                            task_type=task_type,
                                            metric=metric,
-                                           output_dir=output_dir)
+                                           output_dir=output_dir,
+                                           model_idx=model_idx,
+                                           model_weight=model_weight)
         else:
             raise ValueError("%s is not supported for ensemble!" % ensemble_method)
 
