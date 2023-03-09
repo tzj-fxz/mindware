@@ -116,8 +116,8 @@ class TextClassificationEvaluator(_BaseEvaluator):
 
             new_dataset = self.dataset.copy_()
 
-            # No preprocessor, thus empty list
-            op_list = {'text_preprocessor': None}
+            # No preprocessor
+            op_list = {}
 
             config_dict = config.copy()
             dl_model_path = CombinedTopKModelSaver.get_dl_model_path_by_config(self.output_dir, config, self.timestamp)
@@ -133,7 +133,7 @@ class TextClassificationEvaluator(_BaseEvaluator):
                         pkl.dump([op_list, clf, score], f)
                 else:
                     with open(model_para_path, 'rb') as f:
-                        _, _a, perf= pkl.load(f)
+                        _, _a, perf = pkl.load(f)
                     if score > perf:
                         with open(model_para_path, 'wb') as f:
                             pkl.dump([op_list, clf, score], f)

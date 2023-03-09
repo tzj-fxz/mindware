@@ -87,6 +87,9 @@ def parse_config(data_node: DataNode, config: dict, record=False, skip_balance=F
 
 
 def construct_node(data_node: DataNode, tran_dict, mode='test'):
+    if not tran_dict:
+        return data_node
+
     if 'image_preprocessor' in tran_dict:
         data_node = tran_dict['image_preprocessor'].operate(data_node)
 

@@ -73,7 +73,10 @@ class BaseEnsembleModel(object):
                     y_valid = _node.val_data.y
 
                 if self.train_labels is not None:
-                    assert (self.train_labels == y_valid).all() or self.train_labels == y_valid
+                    if self.task_type in [TEXT_CLS, IMG_CLS]:
+                        assert self.train_labels == y_valid
+                    else:
+                        assert (self.train_labels == y_valid).all()
                 else:
                     self.train_labels = y_valid
 
@@ -83,7 +86,7 @@ class BaseEnsembleModel(object):
                     if os.path.exists(pt_path):
                         y_pred = model.predict_proba(X_valid, self.metric, test=False, model=torch.load(pt_path))
                 elif self.task_type in CLS_TASKS:
-                        y_pred = model.predict_proba(X_valid)
+                    y_pred = model.predict_proba(X_valid)
                 else:
                     y_pred = model.predict(X_valid)
 
