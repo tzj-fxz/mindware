@@ -146,7 +146,7 @@ class TextClassificationEvaluator(_BaseEvaluator):
             new_dataset = self.dataset.copy_()
 
             # No preprocessor
-            op_list = {'text_preprocessor': None}
+            op_list = {}
 
             # Resource -> epoch_num
             config_dict = config.copy()
