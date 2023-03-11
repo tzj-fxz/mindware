@@ -31,9 +31,9 @@ def train(model, train_loader, optimizer, criterion, device, metric):
     epoch_loss = 0
     epoch_acc = 0
     num_train_samples = 0
-    
+
     model.train()
-    
+
     for i, data in enumerate(train_loader):
         batch_x, batch_y = data
         num_train_samples += len(batch_x)
@@ -56,7 +56,7 @@ def evaluate(model, loader, criterion, device, metric, mode='predict'):
     epoch_acc = 0
     num_val_samples = 0
     tot_pred = None
-    
+
     model.eval()
 
     with torch.no_grad():
@@ -70,11 +70,13 @@ def evaluate(model, loader, criterion, device, metric, mode='predict'):
 
             if mode == 'predict':
                 predictions = np.argmax(predictions.to('cpu').detach().numpy(), axis=-1)
-                epoch_acc += metric._score_func(batch_y.to('cpu').detach().numpy(), predictions) * metric._sign * len(batch_x)
+                epoch_acc += metric._score_func(batch_y.to('cpu').detach().numpy(), predictions) * metric._sign * len(
+                    batch_x)
             elif mode == 'predict_proba':
                 predictions = nn.functional.softmax(predictions, dim=-1).to('cpu').detach().numpy()
-                epoch_acc += metric._score_func(batch_y.to('cpu').detach().numpy(), np.argmax(predictions, axis=-1)) * metric._sign * len(batch_x)
-            
+                epoch_acc += metric._score_func(batch_y.to('cpu').detach().numpy(),
+                                                np.argmax(predictions, axis=-1)) * metric._sign * len(batch_x)
+
             if tot_pred is None:
                 tot_pred = predictions
             else:
@@ -439,12 +441,13 @@ class BaseTextClassificationNeuralNetwork(BaseNeuralNetwork):
         val_loader = DataLoader(dataset=dataset.val_data, batch_size=self.batch_size, shuffle=False,
                                 num_workers=NUM_WORKERS)
         test_loader = DataLoader(dataset=dataset.test_data, batch_size=self.batch_size, shuffle=False,
-                                num_workers=NUM_WORKERS)
+                                 num_workers=NUM_WORKERS)
 
         if self.optimizer == 'SGD':
             optimizer = SGD(params=params, lr=self.sgd_learning_rate, momentum=self.sgd_momentum)
         elif self.optimizer == 'Adam':
-            optimizer = Adam(params=params, lr=self.adam_learning_rate, betas=(self.beta1, 0.999), weight_decay=self.weight_decay)
+            optimizer = Adam(params=params, lr=self.adam_learning_rate, betas=(self.beta1, 0.999),
+                             weight_decay=self.weight_decay)
         else:
             return ValueError("Optimizer %s not supported!" % self.optimizer)
 
@@ -476,7 +479,7 @@ class BaseTextClassificationNeuralNetwork(BaseNeuralNetwork):
         for epoch in range(int(self.cur_epoch_num), int(self.cur_epoch_num) + int(self.epoch_num)):
 
             start_time = time.time()
-            
+
             train_loss, train_acc = train(self.model, train_loader, optimizer, criterion, self.device, metric)
             valid_loss, valid_acc, valid_pred = evaluate(self.model, val_loader, criterion, self.device, metric)
             test_loss, test_acc, test_pred = evaluate(self.model, test_loader, criterion, self.device, metric)
@@ -484,21 +487,22 @@ class BaseTextClassificationNeuralNetwork(BaseNeuralNetwork):
             end_time = time.time()
 
             epoch_mins, epoch_secs = epoch_time(start_time, end_time)
-            
+
             if valid_acc > best_valid_acc:
                 best_valid_acc = valid_acc
                 self.best_model = self.model
-                if int(self.epoch_num)+int(self.cur_epoch_num) == self.get_hyperparameter_search_space()["epoch_num"].value:
+                if int(self.epoch_num) + int(self.cur_epoch_num) == self.get_hyperparameter_search_space()[
+                    "epoch_num"].value:
                     print('Save torch model')
                     torch.save(self.model, self.dl_model_path)
-            
-            print(f'Epoch: {epoch+1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s')
-            print(f'\tTrain Loss: {train_loss:.3f} | Train Acc: {train_acc*100:.2f}%')
-            print(f'\t Val. Loss: {valid_loss:.3f} |  Val. Acc: {valid_acc*100:.2f}%')
-            print(f'\tTest. Loss: {test_loss:.3f} | Test. Acc: {test_acc*100:.2f}%')
-            
+
+            print(f'Epoch: {epoch + 1:02} | Epoch Time: {epoch_mins}m {epoch_secs}s')
+            print(f'\tTrain Loss: {train_loss:.3f} | Train Acc: {train_acc * 100:.2f}%')
+            print(f'\t Val. Loss: {valid_loss:.3f} |  Val. Acc: {valid_acc * 100:.2f}%')
+            print(f'\tTest. Loss: {test_loss:.3f} | Test. Acc: {test_acc * 100:.2f}%')
+
             time_train += (end_time - start_time)
-            
+
             # Early stop
             if 'refit' not in mode:
                 early_stop.update(valid_acc)
@@ -523,9 +527,11 @@ class BaseTextClassificationNeuralNetwork(BaseNeuralNetwork):
 
         batch_size = self.batch_size if batch_size is None else batch_size
         if test == True:
-            loader = DataLoader(dataset=dataset.test_data, batch_size=batch_size, sampler=sampler, num_workers=NUM_WORKERS)
+            loader = DataLoader(dataset=dataset.test_data, batch_size=batch_size, sampler=sampler,
+                                num_workers=NUM_WORKERS)
         else:
-            loader = DataLoader(dataset=dataset.val_data, batch_size=batch_size, sampler=sampler, num_workers=NUM_WORKERS)
+            loader = DataLoader(dataset=dataset.val_data, batch_size=batch_size, sampler=sampler,
+                                num_workers=NUM_WORKERS)
 
         if os.path.exists(self.dl_model_path):
             best_model = torch.load(self.dl_model_path)
@@ -537,6 +543,8 @@ class BaseTextClassificationNeuralNetwork(BaseNeuralNetwork):
 
         with torch.no_grad():
             _a, _b, pred = evaluate(best_model, loader, self.criterion, self.device, metric, mode='predict_proba')
+
+        print(_a, _b)
         return pred
 
     def predict(self, dataset: TotalTextDataset, metric, sampler=None, batch_size=None, test=True, model=None):
@@ -544,13 +552,15 @@ class BaseTextClassificationNeuralNetwork(BaseNeuralNetwork):
             raise ValueError("Model not fitted!")
         elif model is not None:
             self.best_model = model
-        
+
         batch_size = self.batch_size if batch_size is None else batch_size
         assert sampler is None
-        if test == True:
-            loader = DataLoader(dataset=dataset.test_data, batch_size=batch_size, sampler=sampler, num_workers=NUM_WORKERS)
+        if test is True:
+            loader = DataLoader(dataset=dataset.test_data, batch_size=batch_size, sampler=sampler,
+                                num_workers=NUM_WORKERS)
         else:
-            loader = DataLoader(dataset=dataset.val_data, batch_size=batch_size, sampler=sampler, num_workers=NUM_WORKERS)
+            loader = DataLoader(dataset=dataset.val_data, batch_size=batch_size, sampler=sampler,
+                                num_workers=NUM_WORKERS)
 
         if os.path.exists(self.dl_model_path):
             best_model = torch.load(self.dl_model_path)
@@ -561,7 +571,8 @@ class BaseTextClassificationNeuralNetwork(BaseNeuralNetwork):
         best_model.eval()
 
         with torch.no_grad():
-            _a, _b, pred = evaluate(best_model, loader, self.criterion, self.device, metric, mode='predict')    
+            _a, _b, pred = evaluate(best_model, loader, self.criterion, self.device, metric, mode='predict')
+
         return pred
 
     def score(self, dataset: TotalTextDataset, metric, batch_size=None, test=True, model=None):
@@ -572,13 +583,13 @@ class BaseTextClassificationNeuralNetwork(BaseNeuralNetwork):
 
         batch_size = self.batch_size if batch_size is None else batch_size
         if isinstance(dataset.val_data, Dataset):
-            if test == True:
+            if test is True:
                 loader = DataLoader(dataset=dataset.test_data, batch_size=batch_size, num_workers=NUM_WORKERS)
             else:
                 loader = DataLoader(dataset=dataset.val_data, batch_size=batch_size, num_workers=NUM_WORKERS)
         else:
             raise TypeError("Not torch dataset")
-        
+
         if os.path.exists(self.dl_model_path):
             best_model = torch.load(self.dl_model_path)
         else:

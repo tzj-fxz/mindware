@@ -13,7 +13,6 @@ import numpy as np
 import warnings
 from sklearn.metrics import balanced_accuracy_score, mean_squared_error, accuracy_score
 
-
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 sys.path.append(os.getcwd())
 sys.path.append(r'/root/tzj/mindware')
@@ -22,7 +21,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from mindware.components.utils.constants import CATEGORICAL, MULTICLASS_CLS, REGRESSION
 from mindware.components.utils.text_util import build_dataset, content2Xy, Logger
 from mindware.datasets.base_dl_dataset import TotalTextDataset, TextDataset
-
 
 warnings.filterwarnings("ignore")
 parser = argparse.ArgumentParser()
@@ -43,10 +41,10 @@ save_folder = project_dir + 'data/exp_sys/'
 
 # prepare for raw data
 data_path = "/root/tzj/dataset/工单分类验证数据/全部数据集/"
-vocab_path = data_path+'vocab.txt'
-train_path = data_path+'train.txt'
-val_path = data_path+'dev.txt'
-test_path = data_path+'test.txt'
+vocab_path = data_path + 'vocab.txt'
+train_path = data_path + 'train.txt'
+val_path = data_path + 'dev.txt'
+test_path = data_path + 'test.txt'
 
 if not os.path.exists(save_folder):
     os.makedirs(save_folder)
@@ -54,9 +52,8 @@ if not os.path.exists(save_folder):
 
 def evaluate_sys(run_id, task_type, mth, dataset, ens_method, enable_meta,
                  eval_type='holdout', time_limit=1800, seed=1, tree_id=0):
-
     vocab, train_, val_, test_ = build_dataset(vocab_path, train_path, val_path, test_path, use_word=False)
-    
+
     train_data_X, train_data_y = content2Xy(train_)
     val_data_X, val_data_y = content2Xy(val_)
     test_data_X, test_data_y = content2Xy(test_)
@@ -65,6 +62,7 @@ def evaluate_sys(run_id, task_type, mth, dataset, ens_method, enable_meta,
     test_data = TextDataset(X=test_data_X, y=test_data_y)
 
     tot_dataset = TotalTextDataset(train_data, val_data, test_data, vocab)
+    tot_dataset_test = TotalTextDataset(train_data, val_data, test_data, vocab)
 
     if task_type == 'text_cls':
         from mindware.estimators import TextClassifier
@@ -84,25 +82,25 @@ def evaluate_sys(run_id, task_type, mth, dataset, ens_method, enable_meta,
 
     info_dict = estimator.save_info()
     print("save successfully")
-    
+
     # Test for storage
     new_estimator = TextClassifier(time_limit=time_limit,
-                                dataset_name=dataset,
-                                metric='acc',
-                                include_algorithms=['textcnn'],
-                                output_dir=save_folder,
-                                ensemble_method=ens_method,
-                                ensemble_size=5,
-                                evaluation=eval_type,
-                                per_run_time_limit=int(1e6),
-                                n_jobs=1)
-    
+                                   dataset_name=dataset,
+                                   metric='acc',
+                                   include_algorithms=['textcnn'],
+                                   output_dir=save_folder,
+                                   ensemble_method=ens_method,
+                                   ensemble_size=5,
+                                   evaluation=eval_type,
+                                   per_run_time_limit=int(1e6),
+                                   n_jobs=1)
+
     content_dict = new_estimator.load_info(estimator.output_dir)
     print("content_dict: ", content_dict)
 
     best_model = estimator._ml_engine.solver.incumbent
     pred_val = new_estimator.predict(tot_dataset, mode='val')
-    pred_test = new_estimator.predict(tot_dataset, mode='test')
+    pred_test = new_estimator.predict(tot_dataset_test, mode='test')
 
     y_label_val = np.array(val_data_y)
     y_label = np.array(test_data_y)
@@ -153,6 +151,6 @@ if __name__ == "__main__":
                 print('Running %s with %d-th seed' % (dataset, _id + 1))
                 if method in ['rb', 'fixed', 'alter_hpo', 'combined', 'rb_hpo']:
                     evaluate_sys(_id, task_type, method, dataset, ens_method, enable_meta,
-                                    eval_type=cv, time_limit=time_cost, seed=seed, tree_id=tree_id)
+                                 eval_type=cv, time_limit=time_cost, seed=seed, tree_id=tree_id)
                 else:
                     raise ValueError('Invalid mode: %s!' % method)
