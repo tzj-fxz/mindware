@@ -544,7 +544,6 @@ class BaseTextClassificationNeuralNetwork(BaseNeuralNetwork):
         with torch.no_grad():
             _a, _b, pred = evaluate(best_model, loader, self.criterion, self.device, metric, mode='predict_proba')
 
-        print(_a, _b)
         return pred
 
     def predict(self, dataset: TotalTextDataset, metric, sampler=None, batch_size=None, test=True, model=None):
