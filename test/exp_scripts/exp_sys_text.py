@@ -81,26 +81,27 @@ def evaluate_sys(run_id, task_type, mth, dataset, ens_method, enable_meta,
     estimator.fit(tot_dataset, opt_strategy=mth, dataset_id=dataset, tree_id=tree_id)
 
     info_dict = estimator.save_info()
+    print("content_dict: ", info_dict)
     print("save successfully")
 
     # Test for storage
-    new_estimator = TextClassifier(time_limit=time_limit,
-                                   dataset_name=dataset,
-                                   metric='acc',
-                                   include_algorithms=['textcnn'],
-                                   output_dir=save_folder,
-                                   ensemble_method=ens_method,
-                                   ensemble_size=5,
-                                   evaluation=eval_type,
-                                   per_run_time_limit=int(1e6),
-                                   n_jobs=1)
+    # new_estimator = TextClassifier(time_limit=time_limit,
+    #                                dataset_name=dataset,
+    #                                metric='acc',
+    #                                include_algorithms=['textcnn'],
+    #                                output_dir=save_folder,
+    #                                ensemble_method=ens_method,
+    #                                ensemble_size=5,
+    #                                evaluation=eval_type,
+    #                                per_run_time_limit=int(1e6),
+    #                                n_jobs=1)
+    #
+    # content_dict = new_estimator.load_info(estimator.output_dir)
 
-    content_dict = new_estimator.load_info(estimator.output_dir)
-    print("content_dict: ", content_dict)
 
     best_model = estimator._ml_engine.solver.incumbent
-    pred_val = new_estimator.predict(tot_dataset, mode='val')
-    pred_test = new_estimator.predict(tot_dataset_test, mode='test')
+    pred_val = estimator.predict(tot_dataset, mode='val')
+    pred_test = estimator.predict(tot_dataset_test, mode='test')
 
     y_label_val = np.array(val_data_y)
     y_label = np.array(test_data_y)
