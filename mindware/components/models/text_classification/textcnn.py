@@ -82,7 +82,6 @@ class TextCNN(BaseTextClassificationNeuralNetwork):
         return super().predict(dataset, scorer, test=test, model=model)
 
     def predict_proba(self, dataset: TotalTextDataset, scorer, test=True, model=None):
-        print('test')
         if self.model is None:
             raise NotImplementedError()
         return super().predict_proba(dataset, scorer, test=test, model=model)
